@@ -105,6 +105,46 @@ def export_lat_to_latex(lat, n, filename="lat_tables.tex"):
 
         f.write(r"\end{document}" + "\n")
 
+def observe_lat_statistics(lat, n):
+    max_val = 2 ** n
+    total_entries = max_val ** 3
+
+    max_count = float('-inf')
+    min_count = float('inf')
+    max_positions = []
+    min_positions = []
+    sum_counts = 0
+
+    for gamma in range(max_val):
+        for alpha in range(max_val):
+            for beta in range(max_val):
+                count = lat[alpha][beta][gamma]
+                sum_counts += count
+
+                if count > max_count:
+                    max_count = count
+                    max_positions = [(alpha, beta, gamma)]
+                elif count == max_count:
+                    max_positions.append((alpha, beta, gamma))
+
+                if count < min_count:
+                    min_count = count
+                    min_positions = [(alpha, beta, gamma)]
+                elif count == min_count:
+                    min_positions.append((alpha, beta, gamma))
+
+    avg = sum_counts / total_entries
+
+    print("LAT Observation Report")
+    print("=========================")
+    print(f"n = {n}, Total Entries: {total_entries}")
+    print(f"Max LAT Count   : {max_count}")
+    print(f"At Positions    : {[f'(α={a:0{n}b}, β={b:0{n}b}, γ={g:0{n}b})' for a,b,g in max_positions]}")
+    print(f"Min LAT Count   : {min_count}")
+    print(f"At Positions    : {[f'(α={a:0{n}b}, β={b:0{n}b}, γ={g:0{n}b})' for a,b,g in min_positions]}")
+    print(f"Average Count   : {avg:.2f}")
+    print("=========================")
+
 
 if __name__ == "__main__":
 
@@ -113,5 +153,5 @@ if __name__ == "__main__":
     lat = build_lat(n)
     #print_lat_for_fixed_gamma(lat, n, gamma_example)
     print_all_lat_tables(lat, n)
-    export_lat_to_latex(lat, n, "lat_tables.tex")
-    
+    #export_lat_to_latex(lat, n, "lat_tables.tex")
+    observe_lat_statistics(lat, n)
