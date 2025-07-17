@@ -36,29 +36,34 @@ def build_lat(n):
     return lat
 
 def print_lat_for_fixed_gamma(lat, n, gamma_fixed):
-    """Print LAT[alpha][beta][gamma_fixed] as a readable table."""
+    """Print LAT[alpha][beta][gamma_fixed] as a readable bias table."""
     max_val = 2 ** n
-    print(f"Linear Approximation Table for γ = {gamma_fixed:0{n}b}:\n")
+    center = 2 ** (2 * n - 1)
+    print(f"Linear Approximation Bias Table for γ = {gamma_fixed:0{n}b}:\n")
 
     # Header
     print("      ", end="")
     for beta in range(max_val):
         print(f"{beta:0{n}b} ", end="")
-    print("\n" + "-" * (6 + (n + 1) * max_val))
+    print("\n" + "-" * (6 + (n + 2) * max_val))
 
     # Rows
     for alpha in range(max_val):
         print(f"{alpha:0{n}b} | ", end="")
         for beta in range(max_val):
-            value = lat[alpha][beta][gamma_fixed]
-            print(f"{value:>{n+1}}", end=" ")
+            raw = lat[alpha][beta][gamma_fixed]
+            bias = raw - center
+            print(f"{bias:>3} ", end="")
         print()
 
+
 def print_all_lat_tables(lat, n):
-    """Print LAT raw count tables for all gamma values."""
+    """Print LAT bias tables for all gamma values."""
     max_val = 2 ** n
+    center = 2 ** (2 * n - 1)
+
     for gamma in range(max_val):
-        print(f"\nLAT Table for γ = {gamma:0{n}b}:\n")
+        print(f"\nLAT Bias Table for γ = {gamma:0{n}b}:\n")
         print("      ", end="")
         for beta in range(max_val):
             print(f"{beta:0{n}b} ", end="")
@@ -66,13 +71,15 @@ def print_all_lat_tables(lat, n):
         for alpha in range(max_val):
             print(f"{alpha:0{n}b} | ", end="")
             for beta in range(max_val):
-                count = lat[alpha][beta][gamma]
-                print(f"{count:>3} ", end="")
+                raw = lat[alpha][beta][gamma]
+                bias = raw - center
+                print(f"{bias:>3} ", end="")
             print()
 
 
 def export_lat_to_latex(lat, n, filename="lat_tables.tex"):
     max_val = 2 ** n
+    center = 2 ** (2 * n - 1)
 
     with open(filename, "w") as f:
         f.write(r"\documentclass{article}" + "\n")
@@ -85,18 +92,19 @@ def export_lat_to_latex(lat, n, filename="lat_tables.tex"):
             f.write(r"\begin{center}" + "\n")
             f.write(r"\begin{tabular}{c|" + "c" * max_val + "}\n")
             # Header row
-            header = " $\\beta$ "
+            header = " $ \\alpha / \\beta $ "
             for beta in range(max_val):
                 header += f"& ${beta:0{n}b}$ "
             f.write(header + r" \\" + "\n")
             f.write(r"\midrule" + "\n")
 
-            # Table rows
+            # Table rows with bias
             for alpha in range(max_val):
                 row = f"${alpha:0{n}b}$ "
                 for beta in range(max_val):
                     count = lat[alpha][beta][gamma]
-                    row += f"& {count} "
+                    bias = count - center
+                    row += f"& {bias} "
                 row += r" \\"
                 f.write(row + "\n")
 
@@ -104,6 +112,47 @@ def export_lat_to_latex(lat, n, filename="lat_tables.tex"):
             f.write(r"\end{center}" + "\n\n")
 
         f.write(r"\end{document}" + "\n")
+
+
+def export_merged_lat_bias_table(lat, n, filename="lat_merged_table.tex"):
+    max_val = 2 ** n
+    center = 2 ** (2 * n - 1)
+
+    with open(filename, "w") as f:
+        f.write(r"\documentclass[10pt]{article}" + "\n")
+        f.write(r"\usepackage[a4paper, margin=0.5in, landscape]{geometry}" + "\n")
+        f.write(r"\usepackage{booktabs}" + "\n")
+        f.write(r"\usepackage{longtable}" + "\n")
+        f.write(r"\usepackage{array}" + "\n")
+        f.write(r"\renewcommand{\arraystretch}{0.7}" + "\n")
+        f.write(r"\setlength{\tabcolsep}{2pt}" + "\n")
+        f.write(r"\begin{document}" + "\n")
+        f.write(r"\tiny" + "\n")
+        f.write(r"\begin{center}" + "\n")
+        f.write(r"\begin{longtable}{c|" + "c" * max_val + "}\n")
+
+        # Header row
+        header = r"$\alpha\beta \backslash \gamma$"
+        for gamma in range(max_val):
+            header += f" & ${gamma:0{n}b}$"
+        f.write(header + r" \\" + "\n")
+        f.write(r"\hline" + "\n")
+
+        # All (α, β) combinations
+        for alpha in range(max_val):
+            for beta in range(max_val):
+                row_label = f"${alpha:0{n}b}{beta:0{n}b}$"
+                row = row_label
+                for gamma in range(max_val):
+                    count = lat[alpha][beta][gamma]
+                    bias = count - center
+                    row += f" & {bias}"
+                f.write(row + r" \\" + "\n")
+
+        f.write(r"\end{longtable}" + "\n")
+        f.write(r"\end{center}" + "\n")
+        f.write(r"\end{document}" + "\n")
+
 
 def observe_lat_statistics(lat, n):
     max_val = 2 ** n
@@ -153,5 +202,6 @@ if __name__ == "__main__":
     lat = build_lat(n)
     #print_lat_for_fixed_gamma(lat, n, gamma_example)
     print_all_lat_tables(lat, n)
-    #export_lat_to_latex(lat, n, "lat_tables.tex")
-    observe_lat_statistics(lat, n)
+    export_lat_to_latex(lat, n, "lat_tables.tex")
+    #observe_lat_statistics(lat, n)
+    #export_merged_lat_bias_table(lat, n, "lat_merged_table.tex")
